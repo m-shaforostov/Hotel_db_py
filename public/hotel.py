@@ -3,14 +3,16 @@ import sqlite3
 
 class Hotel:
     def __init__(self):
-        self.connection = sqlite3.connect('hotel.db')  # Connect to/create
-        self.cursor = self.connection.cursor()
+        self.connect = sqlite3.connect('hotel.db')  # Connect to/create
+        self.cursor = self.connect.cursor()
 
         self.create_tables()
-        self.insert_data()
+        self.load_data_from_files()
 
-        self.connection.commit()
-        self.connection.close()
+        self.insert_data("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
+
+        self.connect.commit()
+        self.connect.close()
 
     def create_tables(self):
         # Create some tables -------------------------------------------------------------------------------------------
@@ -98,20 +100,8 @@ class Hotel:
                 data_array.append(tuple(row_array))
             return data_array
 
-    def insert_data(self):
-
-        # with open("backup/guests_text_20", "r", encoding="utf-8") as file:
-        #     guests_data = []
-        #     for row in file.read().split("\n"):
-        #         row_tuple = []
-        #         for element in row.split(";"):
-        #             if element.isdigit():
-        #                 element = int(element)
-        #             row_tuple.append(element)
-        #         guests_data.append(tuple(row_tuple))
-
+    def load_data_from_files(self):
         guests_data = self.parse_to_array("storage/guests_text_20.dat")
-        print(guests_data)
         rooms_data = self.parse_to_array("storage/rooms_text_20.dat")
         bookings_data = self.parse_to_array("storage/bookings_text_20.dat")
         payments_data = self.parse_to_array("storage/payments_text_20.dat")
@@ -123,7 +113,8 @@ class Hotel:
         ''', guests_data)
 
         self.cursor.executemany('''
-        INSERT INTO Rooms (room_number, beds_number, price_per_night, availability_status, bathroom_type, balcony, side_of_building)
+        INSERT INTO Rooms (room_number, beds_number, price_per_night, availability_status, bathroom_type, balcony, 
+            side_of_building)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', rooms_data)
 
@@ -142,11 +133,17 @@ class Hotel:
         VALUES (?, ?, ?, ?, ?)
         ''', staff_data)
 
-        # cursor.executemany('''
-        # INSERT INTO Services (name, description, price)
-        # VALUES (?, ?, ?)
-        # ''', services_data)
-
+    def insert_data(self, tabel, data_array):
+        table_columns = {
+            "Guests": "(first_name, last_name, email, phone_number, age)",
+            "Rooms": "(room_number, beds_number, price_per_night, availability_status, bathroom_type, balcony, "
+                     "side_of_building)",
+            "Bookings": "(guest_id, room_id, check_in_date, nights_number, check_out_date)",
+            "Payments": "(booking_id, amount, payment_date, payment_method)",
+            "Staff": "(first_name, last_name, position, email, phone_number)",
+        }
+        self.connect.execute(
+            f'INSERT INTO {tabel} {table_columns[tabel]} VALUES ({(len(data_array) * "?, ")[:-2]})', data_array)
 
 
 
