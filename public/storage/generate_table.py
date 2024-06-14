@@ -22,8 +22,8 @@ def generate_guests_data(num_rows):
         first_name = random.choice(first_names)
         last_name = random.choice(last_names)
         email = f"{first_name.lower()}.{last_name.lower()}@example.com"
-        number = random.randint(950000000, 959999999)
-        phone_number = f"+421-{number // 10000000}-{number % 10000000 // 10000}-{number % 10000}"
+        number = str(random.randint(950000000, 959999999))
+        phone_number = f"+421-{number[:2]}-{number[2:5]}-{number[5:]}"
         age = random.randint(18, 70)
 
         row = f"{first_name};{last_name};{email};{phone_number};{age}\n"
