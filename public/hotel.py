@@ -7,9 +7,10 @@ class Hotel:
         self.cursor = self.connect.cursor()
 
         self.create_tables()
-        self.load_data_from_files()
+        self.console_interface()
 
-        self.insert_data("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
+        # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
+        # self.insert_data("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
 
         self.connect.commit()
         self.connect.close()
@@ -86,6 +87,12 @@ class Hotel:
 
         # --------------------------------------------------------------------------------------------------------------
 
+    def console_interface(self):
+        reading_from_files = input("Hello! Before we start, do you want to read data from files? y/[n]\n")
+        if reading_from_files.lower() == "y" or reading_from_files == "yes":
+            self.load_data_from_files()
+
+
     def parse_to_array(self, file_name):
         with open(file_name, "rb") as file:
             data = file.read()
@@ -100,6 +107,10 @@ class Hotel:
                 data_array.append(tuple(row_array))
             return data_array
 
+    def truncate_table(self, table):
+        self.cursor.execute(f'DELETE FROM {table};')
+        self.cursor.execute(f'DELETE FROM sqlite_sequence WHERE name="{table}"')
+
     def load_data_from_files(self):
         guests_data = self.parse_to_array("storage/guests_text_20.dat")
         rooms_data = self.parse_to_array("storage/rooms_text_20.dat")
@@ -107,31 +118,47 @@ class Hotel:
         payments_data = self.parse_to_array("storage/payments_text_20.dat")
         staff_data = self.parse_to_array("storage/staff_text_20.dat")
 
+        self.truncate_table("Guests")
         self.cursor.executemany('''
         INSERT INTO Guests (first_name, last_name, email, phone_number, age)
         VALUES (?, ?, ?, ?, ?)
         ''', guests_data)
 
+        self.truncate_table("Rooms")
         self.cursor.executemany('''
         INSERT INTO Rooms (room_number, beds_number, price_per_night, availability_status, bathroom_type, balcony, 
             side_of_building)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', rooms_data)
 
+        self.truncate_table("Bookings")
         self.cursor.executemany('''
         INSERT INTO Bookings (guest_id, room_id, check_in_date, nights_number, check_out_date)
         VALUES (?, ?, ?, ?, ?)
         ''', bookings_data)
 
+        self.truncate_table("Payments")
         self.cursor.executemany('''
         INSERT INTO Payments (booking_id, amount, payment_date, payment_method)
         VALUES (?, ?, ?, ?)
         ''', payments_data)
 
+        self.truncate_table("Staff")
         self.cursor.executemany('''
         INSERT INTO Staff (first_name, last_name, position, email, phone_number)
         VALUES (?, ?, ?, ?, ?)
         ''', staff_data)
+
+    def write_table_into_file(self, table, file_name):
+        self.cursor.execute(f"SELECT * FROM {table}")
+        rows = self.cursor.fetchall()
+        b_data = b''
+        for row in rows:
+            b_row = b'\x00'.join([str(element).encode('utf-8') for element in row][1:]) + b'\x00\x00'
+            b_data += b_row
+
+        with open(file_name, 'wb') as file:
+            file.write(b_data)
 
     def insert_data(self, tabel, data_array):
         table_columns = {

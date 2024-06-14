@@ -28,7 +28,7 @@ def convert_from_array(array, file_name):
             file.write(";".join(row) + "\n")
 
 
-convert_to_binary_file("guests_text_20", 'guests_text_20.dat')
+convert_to_binary_file("guests_text_20", '../storage/guests_text_20.dat')
 # a = parse_to_array('guests_text_20.dat')
 # convert_from_array(a, "guests_text_20_2")
 # convert_from_binary_file("guests_text_20.dat", 'guests_text_20_2')
