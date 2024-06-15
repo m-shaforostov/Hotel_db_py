@@ -4,17 +4,23 @@ import sqlite3
 class Hotel:
     def __init__(self):
         self.connect = sqlite3.connect('hotel.db')  # Connect to/create
-        self.cursor = self.connect.cursor()
+        try:
+            self.cursor = self.connect.cursor()
 
-        self.create_tables()
-        self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
-        # self.console_interface()
+            self.create_tables()
+            # self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
+            # self.update_table_row("Guests", 19, ["Evelyn", "Martinez", "evelyn.martinez@example.com", None])
+            # self.update_table_row("Guests", 18, [None,"Hernandez","abigail.hernandez@example.com","+421-95-867-7175"])
+            # self.console_interface()
 
-        # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
-        # self.insert_data_to_table("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
-
-        self.connect.commit()
-        self.connect.close()
+            # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
+            # self.insert_data_to_table("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
+        finally:
+            if self.connect:
+                self.connect.commit()
+                self.connect.close()
 
     # Create some tables ----------------------------------------------------------------------------------------------
     def create_tables(self):
@@ -24,7 +30,7 @@ class Hotel:
                 first_name TEXT NOT NULL,
                 last_name TEXT NOT NULL,
                 email TEXT NOT NULL,
-                phone_number TEXT NOT NULL
+                phone_number TEXT
             )
         ''')
 
