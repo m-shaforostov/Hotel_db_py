@@ -7,7 +7,8 @@ class Hotel:
         self.cursor = self.connect.cursor()
 
         self.create_tables()
-        self.console_interface()
+        self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
+        # self.console_interface()
 
         # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
         # self.insert_data_to_table("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
@@ -15,16 +16,15 @@ class Hotel:
         self.connect.commit()
         self.connect.close()
 
+    # Create some tables ----------------------------------------------------------------------------------------------
     def create_tables(self):
-        # Create some tables -------------------------------------------------------------------------------------------
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS Guests (
                 guest_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 first_name TEXT NOT NULL,
                 last_name TEXT NOT NULL,
                 email TEXT NOT NULL,
-                phone_number TEXT NOT NULL,
-                age INTEGER
+                phone_number TEXT NOT NULL
             )
         ''')
 
@@ -85,13 +85,8 @@ class Hotel:
         #     )
         # ''')
 
-        # --------------------------------------------------------------------------------------------------------------
-
-    def console_interface(self):
-        reading_from_files = input("Hello! Before we start, do you want to read data from files? y/[n]\n")
-        if reading_from_files.lower() == "y" or reading_from_files == "yes":
-            self.load_database_from_files()
-
+    # --------------------------------------------------------------------------------------------------------------
+    # Load database ------------------------------------------------------------------------------------------------
     @staticmethod
     def parse_to_array(file_name):
         with open(file_name, "rb") as file:
@@ -106,31 +101,6 @@ class Hotel:
                     row_array.append(el)
                 data_array.append(tuple(row_array))
         return data_array
-
-    def clear_table(self, table):
-        self.cursor.execute(f'DELETE FROM {table};')
-        self.cursor.execute(f'DELETE FROM sqlite_sequence WHERE name="{table}"')
-
-    def delete_table(self, table):
-        self.cursor.execute(f'DROP TABLE IF EXISTS {table};')
-
-    # TODO
-    def update_table_row(self, table, row_id, new_data_array):
-        self.cursor.execute(f"UPDATE {table} SET ;")
-
-    def get_columns_names(self, table):
-        columns_info = self.cursor.execute(f'PRAGMA table_info({table})').fetchall()
-        columns_names = []
-        for col in columns_info:
-            columns_names.append(col[1])
-        return tuple(columns_names)
-
-    def insert_many_rows(self, table, table_data):
-        table_columns = self.get_columns_names(table)[1:]
-        self.cursor.executemany(f'''
-            INSERT INTO {table} {table_columns}
-            VALUES ({(len(table_columns) * "?, ")[:-2]})
-            ''', table_data)
 
     def load_database_from_files(self):
         guests_data = self.parse_to_array("storage/guests_text_20.dat")
@@ -154,6 +124,49 @@ class Hotel:
         self.clear_table("Staff")
         self.insert_many_rows("Staff", staff_data)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    # Managing DB ------------------------------------------------------------------------------------------------------
+    def console_interface(self):
+        reading_from_files = input("Hello! Before we start, do you want to read data from files? y/[n]\n")
+        if reading_from_files.lower() == "y" or reading_from_files == "yes":
+            self.load_database_from_files()
+
+    def get_columns_names(self, table):
+        columns_info = self.cursor.execute(f'PRAGMA table_info({table})').fetchall()
+        columns_names = []
+        for col in columns_info:
+            columns_names.append(col[1])
+        return tuple(columns_names)
+
+    def clear_table(self, table):
+        self.cursor.execute(f'DELETE FROM {table};')
+        self.cursor.execute(f'DELETE FROM sqlite_sequence WHERE name="{table}"')
+
+    def delete_table(self, table):
+        self.cursor.execute(f'DROP TABLE IF EXISTS {table};')
+
+    def update_table_row(self, table, row_id, new_data_array):
+        table_columns = self.get_columns_names(table)
+        id_name = table_columns[0]  # name of the row_id column
+        columns = table_columns[1:]  # names of columns without id column
+        set_query = ", ".join(f'{col} = ?' for col in columns)  # first_name = ?, last_name = ?, ...
+        sql = f'UPDATE {table} SET {set_query} WHERE {id_name} = ?;'
+        self.cursor.execute(sql, (*new_data_array, row_id))
+
+    def insert_many_rows(self, table, table_data):
+        table_columns = self.get_columns_names(table)[1:]
+        self.cursor.executemany(f'''
+            INSERT INTO {table} {table_columns}
+            VALUES ({(len(table_columns) * "?, ")[:-2]})
+            ''', table_data)
+
+    def insert_data_to_table(self, table, data_array):
+        table_columns = self.get_columns_names(table)[1:]
+        self.connect.execute(
+            f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Saving to files --------------------------------------------------------------------------------------------------
     def write_table_into_file(self, table, file_name):
         self.cursor.execute(f"SELECT * FROM {table}")
         rows = self.cursor.fetchall()
@@ -164,12 +177,7 @@ class Hotel:
 
         with open(file_name, 'wb') as file:
             file.write(b_data)
-
-    def insert_data_to_table(self, table, data_array):
-        table_columns = self.get_columns_names(table)[1:]
-        self.connect.execute(
-            f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
-
+    # ------------------------------------------------------------------------------------------------------------------
 
 
 h = Hotel()
