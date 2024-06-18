@@ -9,9 +9,9 @@ class Hotel:
         try:
             self.connect = sqlite3.connect('hotel.db')  # Connect to/create
             self.cursor = self.connect.cursor()
+            g = GUI(self)
 
             self.create_tables()
-            g = self.GUI(self)
             # self.remove_row("Guests", [["20"], ["19"]])
             # self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
             # self.update_table_row("Guests", 19, ["Evelyn", "Martinez", "evelyn.martinez@example.com", None])
@@ -200,83 +200,84 @@ class Hotel:
         with open(file_name, 'wb') as file:
             file.write(b_data)
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # Draw GUI ---------------------------------------------------------------------------------------------------------
-    class GUI:
-        def __init__(self, hotel_self):
-            self.hotel_self = hotel_self
-            self.root = tk.Tk()
-            self.root.title("Hotel Database")
-            self.table = None
 
-            self.create_buttons()
-            self.create_table()
-            self.fill_the_table("Guests")
+# ----------------------------------------------------------------------------------------------------------------------
+# Draw GUI -------------------------------------------------------------------------------------------------------------
+class GUI:
+    def __init__(self, hotel):
+        self.hotel = hotel
+        self.root = tk.Tk()
+        self.root.title("Hotel Database")
+        self.table = None
 
-            self.root.mainloop()
+        self.create_buttons()
+        self.create_table()
+        self.fill_the_table("Guests")
 
-        def create_buttons(self):
-            header_frame = tk.Frame(self.root)
-            header_frame.pack(side=tk.TOP)
+        self.root.mainloop()
 
-            tk.Button(header_frame, text="Load Guests", command=self.load_guests).pack(side=tk.LEFT)
-            tk.Button(header_frame, text="Load Rooms", command=self.load_rooms).pack(side=tk.LEFT)
-            tk.Button(header_frame, text="Load Bookings", command=self.load_bookings).pack(side=tk.LEFT)
+    def create_buttons(self):
+        header_frame = tk.Frame(self.root)
+        header_frame.pack(side=tk.TOP)
 
-        def create_table(self):
-            table_frame = tk.Frame(self.root)
-            table_frame.pack(fill=tk.BOTH, expand=True)
+        tk.Button(header_frame, text="Load Guests", command=self.load_guests).pack(side=tk.LEFT)
+        tk.Button(header_frame, text="Load Rooms", command=self.load_rooms).pack(side=tk.LEFT)
+        tk.Button(header_frame, text="Load Bookings", command=self.load_bookings).pack(side=tk.LEFT)
 
-            self.table = ttk.Treeview(table_frame)
-            self.table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    def create_table(self):
+        table_frame = tk.Frame(self.root)
+        table_frame.pack(fill=tk.BOTH, expand=True)
 
-            scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.table.yview)
-            self.table.configure()  # yscroll=scrollbar.set
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.table = ttk.Treeview(table_frame)
+        self.table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        def fill_the_table(self, table):
-            self.table["columns"] = self.hotel_self.get_columns_names(table)
-            self.table.column("#0", width=0, stretch=tk.NO)  # Hide the default first column
-            self.table.heading("#0", text="", anchor=tk.W)
+        scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.table.yview)
+        self.table.configure()  # yscroll=scrollbar.set
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-            for col in self.table["columns"]:
-                w = 200
-                if col[-2:] == "id":
-                    w = 100
-                self.table.column(col, anchor=tk.W, width=w)
-                self.table.heading(col, text=col, anchor=tk.W)
+    def fill_the_table(self, table):
+        self.table["columns"] = self.hotel.get_columns_names(table)
+        self.table.column("#0", width=0, stretch=tk.NO)  # Hide the default first column
+        self.table.heading("#0", text="", anchor=tk.W)
 
-        def load_data(self, table_name, columns):
-            # Clear the current table
-            # for item in self.table.get_children():
-            #     self.table.delete(item)
+        for col in self.table["columns"]:
+            w = 200
+            if col[-2:] == "id":
+                w = 100
+            self.table.column(col, anchor=tk.W, width=w)
+            self.table.heading(col, text=col, anchor=tk.W)
 
-            # Connect to the database and fetch data
-            conn = sqlite3.connect("hotel.db")
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {table_name}")
-            rows = cursor.fetchall()
-            conn.close()
+    def load_data(self, table_name, columns):
+        # Clear the current table
+        # for item in self.table.get_children():
+        #     self.table.delete(item)
 
-            # Update the Treeview widget with new columns and data
-            self.table["columns"] = columns
-            for col in self.table["columns"]:
-                self.table.heading(col, text=col)
+        # Connect to the database and fetch data
+        conn = sqlite3.connect("hotel.db")
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM {table_name}")
+        rows = cursor.fetchall()
+        conn.close()
 
-            for row in rows:
-                self.table.insert("", tk.END, values=row)
+        # Update the Treeview widget with new columns and data
+        self.table["columns"] = columns
+        for col in self.table["columns"]:
+            self.table.heading(col, text=col)
 
-        def load_guests(self):
-            self.load_data("Guests", ("ID", "Name", "Gender", "Age"))
+        for row in rows:
+            self.table.insert("", tk.END, values=row)
 
-        def load_rooms(self):
-            self.load_data("Rooms", (
-                "RoomNumber", "BedsType", "PricePerNight", "AvailabilityStatus", "BathroomType", "Balcony",
-                "SideOfBuilding"))
+    def load_guests(self):
+        self.load_data("Guests", ("ID", "Name", "Gender", "Age"))
 
-        def load_bookings(self):
-            self.load_data("Bookings",
-                           ("BookingID", "GuestID", "RoomNumber", "CheckInDate", "NightsStayed", "CheckOutDate"))
+    def load_rooms(self):
+        self.load_data("Rooms", (
+            "RoomNumber", "BedsType", "PricePerNight", "AvailabilityStatus", "BathroomType", "Balcony",
+            "SideOfBuilding"))
+
+    def load_bookings(self):
+        self.load_data("Bookings",
+                       ("BookingID", "GuestID", "RoomNumber", "CheckInDate", "NightsStayed", "CheckOutDate"))
 
 
 h = Hotel()
