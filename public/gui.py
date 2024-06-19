@@ -14,6 +14,7 @@ class GUI:
         self.selected_rows = tuple()
         self.first_selected_data = None
         self.edit_window = None
+        self.add_window = None
         self.entry_widgets = []
 
         self.create_open_buttons()
@@ -38,7 +39,7 @@ class GUI:
         tk.Button(change_btns_frame, text="Remove row",
                   command=lambda: self.delete_items()).pack(side=tk.LEFT)
         tk.Button(change_btns_frame, text="Add row",
-                  command=lambda: ...).pack(side=tk.LEFT)
+                  command=lambda: self.add_row()).pack(side=tk.LEFT)
         tk.Button(change_btns_frame, text="Update row",
                   command=lambda: self.make_row_editable()).pack(side=tk.LEFT)
         tk.Button(change_btns_frame, text="Load DB",
@@ -122,19 +123,22 @@ class GUI:
         if len(self.selected_rows) > 1:
             print("Only one row should be selected")
         elif len(self.selected_rows) == 1:
-            updating_data = self.first_selected_data[1:]
             self.edit_window = tk.Toplevel(self.root)
+            self.edit_window.title("Edit mode")
             self.edit_window.transient(self.root)  # Set to be on top of the main window
             self.edit_window.grab_set()  # Make the window modal
             self.edit_window.focus()  # Set focus on the edit window
-            for index, value in enumerate(self.first_selected_data[1:]):
+
+            self.entry_widgets = []
+            for index, value in enumerate(self.first_selected_data[1:]):  # without id column
                 tk.Label(self.edit_window, text=self.table["columns"][index]).grid(row=index, column=0)
                 entry = tk.Entry(self.edit_window)
                 entry.insert(0, value)
                 entry.grid(row=index, column=1)
                 self.entry_widgets.append(entry)
+
             save_button = tk.Button(self.edit_window, text='Save', command=self.update_row_in_db)
-            save_button.grid(row=len(updating_data), column=1, sticky='e')
+            save_button.grid(row=len(self.entry_widgets), column=1, sticky='e')
             self.edit_window.bind('<Return>', self.update_row_in_db)
         else:
             print("No row selected")
@@ -147,3 +151,29 @@ class GUI:
         self.load_table(table)
         self.edit_window.destroy()
         print(f"Row {row_id} was updated successfully")
+
+    def add_row(self):
+        self.add_window = tk.Toplevel(self.root)
+        self.add_window.title("Add mode")
+        self.add_window.transient(self.root)  # Set to be on top of the main window
+        self.add_window.grab_set()  # Make the window modal
+        self.add_window.focus()  # Set focus on the add window
+
+        self.entry_widgets = []
+        for index, col in enumerate(self.table["columns"][1:]):  # without id column
+            tk.Label(self.add_window, text=col).grid(row=index, column=0)
+            entry = tk.Entry(self.add_window)
+            entry.grid(row=index, column=1)
+            self.entry_widgets.append(entry)
+
+        add_button = tk.Button(self.add_window, text='Save', command=self.add_row_into_db)
+        add_button.grid(row=len(self.entry_widgets), column=1, sticky='e')
+        self.add_window.bind('<Return>', self.add_row_into_db)
+
+    def add_row_into_db(self, _=None):
+        table = self.loaded_table
+        data_array = [entry.get() or None for entry in self.entry_widgets]
+        self.hotel.insert_data_to_table(table, data_array)
+        self.load_table(table)
+        self.add_window.destroy()
+        print(f"Row was added successfully")
