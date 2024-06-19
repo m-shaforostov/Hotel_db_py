@@ -16,6 +16,7 @@ class GUI:
         self.edit_window = None
         self.add_window = None
         self.entry_widgets = []
+        self.sort_order = dict()
 
         self.create_open_buttons()
 
@@ -61,10 +62,16 @@ class GUI:
 
     def draw_columns(self, table):
         self.table["columns"] = self.hotel.get_columns_names(table)
-        for col in self.table["columns"]:
+        for i, col in enumerate(self.table["columns"]):
             w = 200
             self.table.column(col, anchor=tk.W, width=w)
-            self.table.heading(col, text=col, anchor=tk.W)
+            heading_text = col
+            if col in self.sort_order:
+                if self.sort_order[col] == "ASC":
+                    heading_text += " ^"
+                elif self.sort_order[col] == "DESC":
+                    heading_text += " v"
+            self.table.heading(col, text=heading_text, anchor=tk.W, command=lambda _col=col: self.sort_by_column(_col))
 
     def wipe_table_data(self):
         for item in self.table.get_children():
@@ -81,9 +88,20 @@ class GUI:
         self.table.column("#0", width=0, stretch=tk.NO)  # Hide the default first column
         self.draw_columns(table)
 
-        self.hotel.cursor.execute(f"SELECT * FROM {table}")
-        rows = self.hotel.cursor.fetchall()
+        sorting_cols = list()
+        for col, ord in self.sort_order.items():
+            if ord is not None:
+                sorting_cols.append((col, ord))
 
+        if sorting_cols:
+            query = ""
+            for el in sorting_cols:
+                query += f"{el[0]} {el[1]}, "
+            print(f"SELECT * FROM {self.loaded_table} ORDER BY {query[:-2]}")
+            self.hotel.cursor.execute(f"SELECT * FROM {self.loaded_table} ORDER BY {query[:-2]}")
+        else:
+            self.hotel.cursor.execute(f"SELECT * FROM {self.loaded_table}")
+        rows = self.hotel.cursor.fetchall()
         for row in rows:
             self.table.insert("", tk.END, values=row)
 
@@ -211,3 +229,13 @@ class GUI:
 
         entry.delete(0, tk.END)
         entry.insert(0, formatted_text)
+
+    def sort_by_column(self, col):
+        if col not in self.sort_order or self.sort_order[col] is None:
+            self.sort_order[col] = "DESC"
+        elif self.sort_order[col] == "DESC":
+            self.sort_order[col] = "ASC"
+        else:
+            self.sort_order[col] = None
+
+        self.load_table(self.loaded_table)
