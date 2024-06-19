@@ -97,7 +97,6 @@ class GUI:
         return str(self.table.item(i)['values'][0])
 
     def delete_items(self, _=None):
-        for row in self.table.selection():
-            self.hotel.remove_row(self.loaded_table, self.get_row(row))
-            self.table.delete(row)
-            self.load_table(self.loaded_table)
+        ids = [[self.get_row(row)] for row in self.table.selection()]  # ids = [["2"],["3"]]
+        self.hotel.remove_row(self.loaded_table, ids)
+        self.load_table(self.loaded_table)

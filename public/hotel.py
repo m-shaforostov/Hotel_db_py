@@ -186,16 +186,16 @@ class Hotel:
             f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
         self.connect.commit()
 
-    def remove_row(self, table, id):
+    def remove_row(self, table, ids):
         table_columns = self.get_columns_names(table)
         id_name = table_columns[0]  # name of the row_id column
-        self.connect.execute(
-            f'DELETE FROM {table} WHERE {id_name} = ?', id)
-
+        self.connect.executemany(
+            f'DELETE FROM {table} WHERE {id_name} = ?', ids)
+        # ids = [["2"],["3"]]
         # Re-enumerate ids
-        sql = (f'''UPDATE {table} SET {id_name} = {id_name} - 1 
+        sql = (f'''UPDATE {table} SET {id_name} = {id_name} - {len(ids)} 
                WHERE {id_name} > ?''')
-        self.cursor.execute(sql, id)
+        self.cursor.execute(sql, ids[0])
 
         self.connect.commit()
 
