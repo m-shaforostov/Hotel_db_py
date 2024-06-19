@@ -28,11 +28,8 @@ def convert_from_array(array, file_name):
             file.write(";".join(row) + "\n")
 
 
-convert_to_binary_file("guests_text_20", 'guests_text_20.dat')
-# a = parse_to_array('guests_text_20.dat')
-# convert_from_array(a, "guests_text_20_2")
-# convert_from_binary_file("guests_text_20.dat", 'guests_text_20_2')
-# convert_to_binary_file("rooms_text_20", 'rooms_text_20.dat')
-# convert_to_binary_file("bookings_text_20", 'bookings_text_20.dat')
-# convert_to_binary_file("payments_text_20", 'payments_text_20.dat')
-# convert_to_binary_file("staff_text_20", 'staff_text_20.dat')
+convert_to_binary_file("../backup/guests_data_text", 'guests_data_text.dat')
+convert_to_binary_file("../backup/bookings_data_text", 'bookings_data_text.dat')
+convert_to_binary_file("../backup/payments_data_text", 'payments_data_text.dat')
+convert_to_binary_file("../backup/rooms_data_text", 'rooms_data_text.dat')
+# convert_to_binary_file("../backup/staff_data_text", 'staff_data_text.dat')

@@ -26,7 +26,7 @@ def generate_guests_data(num_rows):
         phone_number = f"+421-{number[:2]}-{number[2:5]}-{number[5:]}"
         age = random.randint(18, 70)
 
-        row = f"{first_name};{last_name};{email};{phone_number};{age}\n"
+        row = f"{first_name};{last_name};{email};{phone_number}\n"
         guests_data.append(row)
 
     return ''.join(guests_data)
@@ -46,7 +46,7 @@ def generate_rooms_data(num_rooms):
         balcony = random.choice([True, False])
         side_of_building = random.choice(['North', 'South'])
 
-        row = f"{room_number};{beds_type};{price_per_night}€;{availability_status};{bathroom_type};{balcony};{side_of_building}\n"
+        row = f"{room_number};{beds_type};{price_per_night};{availability_status};{bathroom_type};{balcony};{side_of_building}\n"
         rooms_data.append(row)
 
     return ''.join(rooms_data)
@@ -85,7 +85,7 @@ def generate_payments_data(bookings_data, room_prices):
         check_in_date = datetime.strptime(booking[2], '%Y-%m-%d')
         payment_date = (check_in_date - timedelta(days=random.randint(1, 3))).strftime('%Y-%m-%d')
 
-        row = f"{booking_id};{amount}€;{payment_date};{payment_method}\n"
+        row = f"{booking_id};{amount};{payment_date};{payment_method}\n"
         payments_data.append(row)
 
     return ''.join(payments_data)
@@ -114,26 +114,33 @@ def convert_to_binary_file(data_text, file_name):
     with open(file_name, 'wb') as file:
         file.write(data_text.encode('utf-8'))
 
+def write_into_file(file_name, data):
+    with open(file_name, "w", encoding="utf-8") as file:
+        file.write(data)
 
 
-
-guests_data_text = generate_guests_data(20)
+guests_data_text = generate_guests_data(500)
 print(guests_data_text)
+write_into_file("../backup/guests_data_text", guests_data_text)
 #
-# rooms_data_text = generate_rooms_data(20)
-# print(rooms_data_text)
-#
-# bookings_data_text = generate_bookings_data(20, 20, 20)
-# print(bookings_data_text)
-#
-# bookings_data = parse_data(bookings_data_text)
-# rooms_data = parse_data(rooms_data_text)
-#
-# room_prices = {int(room[0]) % 100: float(room[2][:-1]) for room in rooms_data}
-#
-# payments_data_text = generate_payments_data(bookings_data, room_prices)
-# print(payments_data_text)
-#
-# staff_data_text = generate_staff_data(10)
+rooms_data_text = generate_rooms_data(500)
+print(rooms_data_text)
+write_into_file("../backup/rooms_data_text", rooms_data_text)
+
+bookings_data_text = generate_bookings_data(300, 300, 500)
+print(bookings_data_text)
+write_into_file("../backup/bookings_data_text", bookings_data_text)
+
+bookings_data = parse_data(bookings_data_text)
+rooms_data = parse_data(rooms_data_text)
+
+room_prices = {int(room[0]) % 100: float(room[2][:-1]) for room in rooms_data}
+
+payments_data_text = generate_payments_data(bookings_data, room_prices)
+print(payments_data_text)
+write_into_file("../backup/payments_data_text", payments_data_text)
+
+# staff_data_text = generate_staff_data(100)
 # print(staff_data_text)
+# write_into_file("../backup/staff_data_text", staff_data_text)
 

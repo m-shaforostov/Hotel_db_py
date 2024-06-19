@@ -11,15 +11,15 @@ class Hotel:
             self.create_tables()
             self.g = gui.GUI(self)
 
+            # self.load_database_from_files()
+            # self.clear_table("Guests")
+            # self.remove_row("Guests", 1)
+            # self.insert_data_to_table("Bookings", ["7", "103", "2024-07-04", "10", "2024-07-14"])
             # self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
             # self.update_table_row("Guests", 19, ["Evelyn", "Martinez", "evelyn.martinez@example.com", None])
             # self.update_table_row("Guests", 18, [None,"Hernandez","abigail.hernandez@example.com","+421-95-867-7175"])
-            # self.console_interface()
-            # self.clear_table("Guests")
-            # self.load_database_from_files()
 
             # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
-            # self.insert_data_to_table("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
         except sqlite3.Error as error:
             print(f"Error while working with DB: '{error}'")
         finally:
@@ -102,14 +102,19 @@ class Hotel:
                         el = int(el)
                     row_array.append(el)
                 data_array.append(tuple(row_array))
-        return data_array
+        return data_array[:-1]
 
-    def load_database_from_files(self):
-        guests_data = self.parse_to_array("storage/guests_text_20.dat")
-        rooms_data = self.parse_to_array("storage/rooms_text_20.dat")
-        bookings_data = self.parse_to_array("storage/bookings_text_20.dat")
-        payments_data = self.parse_to_array("storage/payments_text_20.dat")
-        staff_data = self.parse_to_array("storage/staff_text_20.dat")
+    def load_database_from_files(self, file=""):
+        if file:
+            guests_data = self.parse_to_array("storage/guests_text_20.dat")
+            rooms_data = self.parse_to_array("storage/rooms_text_20.dat")
+            bookings_data = self.parse_to_array("storage/bookings_text_20.dat")
+            payments_data = self.parse_to_array("storage/payments_text_20.dat")
+        else:
+            guests_data = self.parse_to_array("storage/guests_data_text.dat")
+            rooms_data = self.parse_to_array("storage/rooms_data_text.dat")
+            bookings_data = self.parse_to_array("storage/bookings_data_text.dat")
+            payments_data = self.parse_to_array("storage/payments_data_text.dat")
 
         self.clear_table("Guests")
         self.insert_many_rows("Guests", guests_data)
@@ -123,8 +128,8 @@ class Hotel:
         self.clear_table("Payments")
         self.insert_many_rows("Payments", payments_data)
 
-        self.clear_table("Staff")
-        self.insert_many_rows("Staff", staff_data)
+        # self.clear_table("Staff")
+        # self.insert_many_rows("Staff", staff_data)
 
         self.connect.commit()
 
@@ -166,6 +171,7 @@ class Hotel:
     def insert_many_rows(self, table, table_data):
         try:
             table_columns = self.get_columns_names(table)[1:]
+            print(table, table_columns, table_data)
             self.cursor.executemany(f'''
                 INSERT INTO {table} {table_columns}
                 VALUES ({(len(table_columns) * "?, ")[:-2]})
@@ -188,7 +194,7 @@ class Hotel:
             table_columns = self.get_columns_names(table)
             id_name = table_columns[0]  # name of the row_id column
             self.connect.execute(
-                f'DELETE FROM {table} WHERE {id_name} = ?', id)
+                f'DELETE FROM {table} WHERE {id_name} = ?', (str(id),))
             self.connect.commit()
         except sqlite3.Error as error:
             print(f"Error while removing a row: '{error}'")

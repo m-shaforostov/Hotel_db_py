@@ -120,8 +120,12 @@ class GUI:
             sql_ordering = " ORDER BY " + ", ".join([f"{col} {ord}" for col, ord in sorted_cols])
 
         sql_query = query + sql_ordering
-        print(sql_query)
-        self.hotel.cursor.execute(sql_query)
+        if conditions:
+            print(sql_query)
+        try:
+            self.hotel.cursor.execute(sql_query)
+        except sqlite3.Error as error:
+            print(f"Error while searching: '{error}'")
 
         rows = self.hotel.cursor.fetchall()
         for row in rows:
@@ -144,7 +148,7 @@ class GUI:
     def delete_items(self, _=None):
         if self.table.selection():
             for row in self.table.selection():
-                self.hotel.remove_row(self.loaded_table, (self.get_row(row),))
+                self.hotel.remove_row(self.loaded_table, self.get_row(row))
                 print(f"Row {self.get_row(row)} from {self.loaded_table} was deleted successfully")
             self.load_table(self.loaded_table)
             print()
@@ -177,8 +181,6 @@ class GUI:
                 entry.grid(row=index, column=1)
                 self.entry_widgets.append(entry)
                 if self.table["columns"][index + 1] == "phone_number":
-                    print(self.table["columns"][index + 1])
-
                     entry.bind('<KeyRelease>', lambda event: self.format_phone_number(entry))
 
             save_button = tk.Button(self.edit_window, text='Save', command=self.update_row_in_db)
@@ -197,6 +199,7 @@ class GUI:
                 surname_check = self.validate_name(new_data_array[1], "Surname")
                 email_check = self.validate_email(new_data_array[2])
                 phone_check = self.validate_phone(new_data_array[3])
+                print()
                 acceptation = name_check and surname_check and email_check and phone_check
             else:
                 acceptation = True
@@ -238,6 +241,7 @@ class GUI:
                 surname_check = self.validate_name(data_array[1], "Surname")
                 email_check = self.validate_email(data_array[2])
                 phone_check = self.validate_phone(data_array[3])
+                print()
                 acceptation = name_check and surname_check and email_check and phone_check
             else:
                 acceptation = True
