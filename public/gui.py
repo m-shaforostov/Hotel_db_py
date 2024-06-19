@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
+import re
 
 class GUI:
     def __init__(self, hotel):
@@ -57,7 +58,7 @@ class GUI:
         self.table.bind('<Delete>', self.delete_items)
 
         scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.table.yview)
-        self.table.configure(yscroll=scrollbar.set)  #
+        self.table.configure(yscroll=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def draw_columns(self, table):
@@ -85,7 +86,7 @@ class GUI:
 
         self.wipe_table_data()
 
-        self.table.column("#0", width=0, stretch=tk.NO)  # Hide the default first column
+        self.table.column("#0", width=0, stretch=tk.NO)  # Hide the first column
         self.draw_columns(table)
 
         sorting_cols = list()
@@ -170,12 +171,22 @@ class GUI:
             table = self.loaded_table
             row_id = self.first_selected_data[0]
             new_data_array = [entry.get() or None for entry in self.entry_widgets]
+            if table == "Guests":
+                name_check = self.validate_name(new_data_array[0])
+                surname_check = self.validate_name(new_data_array[1], "Surname")
+                email_check = self.validate_email(new_data_array[2])
+                phone_check = self.validate_phone(new_data_array[3])
+                acception = name_check and surname_check and email_check and phone_check
+            else:
+                acception = True
+            if not acception:
+                return
             self.hotel.update_table_row(table, row_id, new_data_array)
             self.load_table(table)
             self.edit_window.destroy()
             print(f"Row {row_id} was updated successfully")
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            print(f"Error while updating a row: '{error}'")
 
     def add_row(self):
         self.add_window = tk.Toplevel(self.root)
@@ -201,12 +212,22 @@ class GUI:
         try:
             table = self.loaded_table
             data_array = [entry.get() or None for entry in self.entry_widgets]
+            if table == "Guests":
+                name_check = self.validate_name(data_array[0])
+                surname_check = self.validate_name(data_array[1], "Surname")
+                email_check = self.validate_email(data_array[2])
+                phone_check = self.validate_phone(data_array[3])
+                acception = name_check and surname_check and email_check and phone_check
+            else:
+                acception = True
+            if not acception:
+                return
             self.hotel.insert_data_to_table(table, data_array)
             self.load_table(table)
             self.add_window.destroy()
             print(f"Row was added successfully")
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            print(f"Error while adding a row: '{error}'")
 
     @staticmethod
     def format_phone_number(entry):
@@ -229,6 +250,34 @@ class GUI:
 
         entry.delete(0, tk.END)
         entry.insert(0, formatted_text)
+
+    @staticmethod
+    def validate_name(name, text="Name"):
+        if name is None or len(name) < 2:
+            print(text + " should contain at least 2 characters")
+            return False
+        if any(char.isdigit() for char in name):
+            print(text + " should not contain digits")
+            return False
+        return True
+
+    @staticmethod
+    def validate_email(email):
+        regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if email is None or not re.match(regex, email):
+            print("Invalid email address.")
+            return False
+        return True
+
+    @staticmethod
+    def validate_phone(phone):
+        if phone == "":
+            return True
+        regex = r'^\+\d{3}-\d{2}-\d{3}-\d{4}$'
+        if phone is None or not re.match(regex, phone):
+            print("Phone number must be in the format +000-00-000-0000")
+            return False
+        return True
 
     def sort_by_column(self, col):
         if col not in self.sort_order or self.sort_order[col] is None:

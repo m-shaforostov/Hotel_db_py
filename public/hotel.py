@@ -21,7 +21,7 @@ class Hotel:
             # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
             # self.insert_data_to_table("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            print(f"Error while working with DB: '{error}'")
         finally:
             if self.connect:
                 self.connect.commit()
@@ -86,15 +86,6 @@ class Hotel:
                 phone_number TEXT NOT NULL
             )
         ''')
-
-        # cursor.execute('''
-        #     CREATE TABLE IF NOT EXISTS Services (
-        #         service_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        #         name TEXT NOT NULL,
-        #         description TEXT,
-        #         price REAL NOT NULL
-        #     )
-        # ''')
 
     # --------------------------------------------------------------------------------------------------------------
     # Load database ------------------------------------------------------------------------------------------------
@@ -201,7 +192,7 @@ class Hotel:
                 f'DELETE FROM {table} WHERE {id_name} = ?', id)
             self.connect.commit()
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            print(f"Error while removing a row: '{error}'")
 
     # ------------------------------------------------------------------------------------------------------------------
     # Saving to files --------------------------------------------------------------------------------------------------
