@@ -131,11 +131,15 @@ class GUI:
 
             self.entry_widgets = []
             for index, value in enumerate(self.first_selected_data[1:]):  # without id column
-                tk.Label(self.edit_window, text=self.table["columns"][index]).grid(row=index, column=0)
+                tk.Label(self.edit_window, text=self.table["columns"][index+1]).grid(row=index, column=0)
                 entry = tk.Entry(self.edit_window)
                 entry.insert(0, value)
                 entry.grid(row=index, column=1)
                 self.entry_widgets.append(entry)
+                if self.table["columns"][index + 1] == "phone_number":
+                    print(self.table["columns"][index + 1])
+
+                    entry.bind('<KeyRelease>', lambda event: self.format_phone_number(entry))
 
             save_button = tk.Button(self.edit_window, text='Save', command=self.update_row_in_db)
             save_button.grid(row=len(self.entry_widgets), column=1, sticky='e')
@@ -144,13 +148,16 @@ class GUI:
             print("No row selected")
 
     def update_row_in_db(self, _=None):
-        table = self.loaded_table
-        row_id = self.first_selected_data[0]
-        new_data_array = [entry.get() or None for entry in self.entry_widgets]
-        self.hotel.update_table_row(table, row_id, new_data_array)
-        self.load_table(table)
-        self.edit_window.destroy()
-        print(f"Row {row_id} was updated successfully")
+        try:
+            table = self.loaded_table
+            row_id = self.first_selected_data[0]
+            new_data_array = [entry.get() or None for entry in self.entry_widgets]
+            self.hotel.update_table_row(table, row_id, new_data_array)
+            self.load_table(table)
+            self.edit_window.destroy()
+            print(f"Row {row_id} was updated successfully")
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
 
     def add_row(self):
         self.add_window = tk.Toplevel(self.root)
@@ -165,15 +172,42 @@ class GUI:
             entry = tk.Entry(self.add_window)
             entry.grid(row=index, column=1)
             self.entry_widgets.append(entry)
+            if col == "phone_number":
+                entry.bind('<KeyRelease>', lambda event: self.format_phone_number(entry))
 
         add_button = tk.Button(self.add_window, text='Save', command=self.add_row_into_db)
         add_button.grid(row=len(self.entry_widgets), column=1, sticky='e')
         self.add_window.bind('<Return>', self.add_row_into_db)
 
     def add_row_into_db(self, _=None):
-        table = self.loaded_table
-        data_array = [entry.get() or None for entry in self.entry_widgets]
-        self.hotel.insert_data_to_table(table, data_array)
-        self.load_table(table)
-        self.add_window.destroy()
-        print(f"Row was added successfully")
+        try:
+            table = self.loaded_table
+            data_array = [entry.get() or None for entry in self.entry_widgets]
+            self.hotel.insert_data_to_table(table, data_array)
+            self.load_table(table)
+            self.add_window.destroy()
+            print(f"Row was added successfully")
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
+
+    @staticmethod
+    def format_phone_number(entry):
+        text = entry.get()
+        text = ''.join(filter(str.isdigit, text))
+        # +000-0-000-0000
+        if len(text) == 1:
+            formatted_text = '+' + text
+        else:
+            formatted_text = ''
+
+        if len(text) > 1:
+            formatted_text += '+' + text[:3]
+        if len(text) > 3:
+            formatted_text += '-' + text[3:5]
+        if len(text) > 5:
+            formatted_text += '-' + text[5:8]
+        if len(text) > 8:
+            formatted_text += '-' + text[8:12]
+
+        entry.delete(0, tk.END)
+        entry.insert(0, formatted_text)

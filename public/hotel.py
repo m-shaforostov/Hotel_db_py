@@ -170,7 +170,7 @@ class Hotel:
             self.cursor.execute(sql, (*new_data_array, row_id))
             self.connect.commit()
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            raise error
 
     def insert_many_rows(self, table, table_data):
         try:
@@ -181,7 +181,7 @@ class Hotel:
                 ''', table_data)
             self.connect.commit()
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            raise error
 
     def insert_data_to_table(self, table, data_array):
         try:
@@ -190,7 +190,8 @@ class Hotel:
                 f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
             self.connect.commit()
         except sqlite3.Error as error:
-            print(f"Error while getting table info: '{error}'")
+            raise error
+
 
     def remove_row(self, table, id):
         try:
