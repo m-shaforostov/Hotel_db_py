@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-import sqlite3
 
 
 class GUI:
@@ -94,9 +93,10 @@ class GUI:
         self.load_table(self.loaded_table)
 
     def get_row(self, i):
-        return str(self.table.item(i)['values'][0])
+        return (str(self.table.item(i)['values'][0]),)
 
     def delete_items(self, _=None):
-        ids = [[self.get_row(row)] for row in self.table.selection()]  # ids = [["2"],["3"]]
-        self.hotel.remove_row(self.loaded_table, ids)
+        for row in self.table.selection():
+            print(row, self.get_row(row))
+            self.hotel.remove_row(self.loaded_table, self.get_row(row))
         self.load_table(self.loaded_table)

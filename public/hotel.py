@@ -15,6 +15,8 @@ class Hotel:
             # self.update_table_row("Guests", 19, ["Evelyn", "Martinez", "evelyn.martinez@example.com", None])
             # self.update_table_row("Guests", 18, [None,"Hernandez","abigail.hernandez@example.com","+421-95-867-7175"])
             # self.console_interface()
+            # self.clear_table("Guests")
+            # self.load_database_from_files()
 
             # self.write_table_into_file("Guests", "storage/guests_text_20.dat")
             # self.insert_data_to_table("Guests", ["LLLLL","JJJJJJJ","liam.jackson@example.com","+421-95-162-0414",99])
@@ -186,17 +188,11 @@ class Hotel:
             f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
         self.connect.commit()
 
-    def remove_row(self, table, ids):
+    def remove_row(self, table, id):
         table_columns = self.get_columns_names(table)
         id_name = table_columns[0]  # name of the row_id column
-        self.connect.executemany(
-            f'DELETE FROM {table} WHERE {id_name} = ?', ids)
-        # ids = [["2"],["3"]]
-        # Re-enumerate ids
-        sql = (f'''UPDATE {table} SET {id_name} = {id_name} - {len(ids)} 
-               WHERE {id_name} > ?''')
-        self.cursor.execute(sql, ids[0])
-
+        self.connect.execute(
+            f'DELETE FROM {table} WHERE {id_name} = ?', id)
         self.connect.commit()
 
     # ------------------------------------------------------------------------------------------------------------------
