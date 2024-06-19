@@ -9,9 +9,9 @@ class Hotel:
             self.connect = sqlite3.connect('hotel.db')  # Connect to/create
             self.cursor = self.connect.cursor()
             self.create_tables()
+            self.load_database_from_files()
             self.g = gui.GUI(self)
 
-            # self.load_database_from_files()
             # self.clear_table("Guests")
             # self.remove_row("Guests", 1)
             # self.insert_data_to_table("Bookings", ["7", "103", "2024-07-04", "10", "2024-07-14"])
@@ -105,33 +105,31 @@ class Hotel:
         return data_array[:-1]
 
     def load_database_from_files(self, file=""):
-        if file:
-            guests_data = self.parse_to_array("storage/guests_text_20.dat")
-            rooms_data = self.parse_to_array("storage/rooms_text_20.dat")
-            bookings_data = self.parse_to_array("storage/bookings_text_20.dat")
-            payments_data = self.parse_to_array("storage/payments_text_20.dat")
-        else:
+        try:
             guests_data = self.parse_to_array("storage/guests_data_text.dat")
             rooms_data = self.parse_to_array("storage/rooms_data_text.dat")
             bookings_data = self.parse_to_array("storage/bookings_data_text.dat")
             payments_data = self.parse_to_array("storage/payments_data_text.dat")
 
-        self.clear_table("Guests")
-        self.insert_many_rows("Guests", guests_data)
+            self.clear_table("Guests")
+            self.insert_many_rows("Guests", guests_data)
 
-        self.clear_table("Rooms")
-        self.insert_many_rows("Rooms", rooms_data)
+            self.clear_table("Rooms")
+            self.insert_many_rows("Rooms", rooms_data)
 
-        self.clear_table("Bookings")
-        self.insert_many_rows("Bookings", bookings_data)
+            self.clear_table("Bookings")
+            self.insert_many_rows("Bookings", bookings_data)
 
-        self.clear_table("Payments")
-        self.insert_many_rows("Payments", payments_data)
+            self.clear_table("Payments")
+            self.insert_many_rows("Payments", payments_data)
 
-        # self.clear_table("Staff")
-        # self.insert_many_rows("Staff", staff_data)
-
-        self.connect.commit()
+            self.connect.commit()
+        except FileNotFoundError as er:
+            print(f"File not found: {er.filename}")
+        except sqlite3.Error as er:
+            print(f"SQLite error: {er}")
+        except Exception as er:
+            print(f"An unexpected error occurred: {er}")
 
     # ------------------------------------------------------------------------------------------------------------------
     # Managing DB ------------------------------------------------------------------------------------------------------
