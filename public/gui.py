@@ -9,8 +9,9 @@ class GUI:
         self.root = tk.Tk()
         # self.root.geometry('1000x400')
         self.root.title("Hotel Database")
+
         self.table = None
-        self.is_table_loaded = False
+        self.loaded_table = None
 
         self.create_open_buttons()
 
@@ -29,10 +30,14 @@ class GUI:
         change_btns_frame = tk.Frame(self.root)
         change_btns_frame.pack(side=tk.TOP)
 
-        tk.Button(change_btns_frame, text="Clear table", command=lambda: self.load_table("Guests")).pack(side=tk.LEFT)
-        tk.Button(change_btns_frame, text="Remove row", command=lambda: self.load_table("Rooms")).pack(side=tk.LEFT)
-        tk.Button(change_btns_frame, text="Add row", command=lambda: self.load_table("Bookings")).pack(side=tk.LEFT)
-        tk.Button(change_btns_frame, text="Load DB", command=lambda: self.load_table("Bookings")).pack(side=tk.LEFT)
+        tk.Button(change_btns_frame, text="Clear table",
+                  command=lambda: self.clear_tabel()).pack(side=tk.LEFT)
+        tk.Button(change_btns_frame, text="Remove row",
+                  command=lambda: self.delete_items()).pack(side=tk.LEFT)
+        tk.Button(change_btns_frame, text="Add row",
+                  command=lambda: self.load_table("Bookings")).pack(side=tk.LEFT)
+        tk.Button(change_btns_frame, text="Load DB",
+                  command=lambda: self.load_database()).pack(side=tk.LEFT)
 
     def create_table(self):
         table_frame = tk.Frame(self.root)
@@ -40,6 +45,9 @@ class GUI:
 
         self.table = ttk.Treeview(table_frame)
         self.table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # self.table.bind('<<TreeviewSelect>>', self.get_rows)
+        self.table.bind('<Delete>', self.delete_items)
 
         scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.table.yview)
         self.table.configure(yscroll=scrollbar.set)  #
@@ -55,17 +63,17 @@ class GUI:
             self.table.column(col, anchor=tk.W, width=w)
             self.table.heading(col, text=col, anchor=tk.W)
 
-    def clear_table(self):
+    def wipe_table_data(self):
         for item in self.table.get_children():
             self.table.delete(item)
 
     def load_table(self, table):
-        if not self.is_table_loaded:
+        if not self.loaded_table:
             self.create_change_buttons()
             self.create_table()
-            self.is_table_loaded = True
+            self.loaded_table = table
 
-        self.clear_table()
+        self.wipe_table_data()
 
         self.table.column("#0", width=0, stretch=tk.NO)  # Hide the default first column
         self.draw_columns(table)
@@ -75,3 +83,21 @@ class GUI:
 
         for row in rows:
             self.table.insert("", tk.END, values=row)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    def clear_tabel(self):
+        self.hotel.clear_table(self.loaded_table)
+        self.wipe_table_data()
+
+    def load_database(self):
+        self.hotel.load_database_from_files()
+        self.load_table(self.loaded_table)
+
+    def get_row(self, i):
+        return str(self.table.item(i)['values'][0])
+
+    def delete_items(self, _=None):
+        for row in self.table.selection():
+            self.hotel.remove_row(self.loaded_table, self.get_row(row))
+            self.table.delete(row)
+            self.load_table(self.loaded_table)

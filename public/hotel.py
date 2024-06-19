@@ -8,10 +8,9 @@ class Hotel:
         try:
             self.connect = sqlite3.connect('hotel.db')  # Connect to/create
             self.cursor = self.connect.cursor()
-            g = gui.GUI(self)
+            self.g = gui.GUI(self)
 
             self.create_tables()
-            # self.remove_row("Guests", [["20"], ["19"]])
             # self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
             # self.update_table_row("Guests", 19, ["Evelyn", "Martinez", "evelyn.martinez@example.com", None])
             # self.update_table_row("Guests", 18, [None,"Hernandez","abigail.hernandez@example.com","+421-95-867-7175"])
@@ -134,6 +133,8 @@ class Hotel:
         self.clear_table("Staff")
         self.insert_many_rows("Staff", staff_data)
 
+        self.connect.commit()
+
     # ------------------------------------------------------------------------------------------------------------------
     # Managing DB ------------------------------------------------------------------------------------------------------
     def console_interface(self):
@@ -151,9 +152,11 @@ class Hotel:
     def clear_table(self, table):
         self.cursor.execute(f'DELETE FROM {table};')
         self.cursor.execute(f'DELETE FROM sqlite_sequence WHERE name="{table}"')
+        self.connect.commit()
 
     def delete_table(self, table):
         self.cursor.execute(f'DROP TABLE IF EXISTS {table};')
+        self.connect.commit()
 
     @staticmethod
     def delete_database(db):
@@ -167,6 +170,7 @@ class Hotel:
         set_query = ", ".join(f'{col} = ?' for col in columns)  # first_name = ?, last_name = ?, ...
         sql = f'UPDATE {table} SET {set_query} WHERE {id_name} = ?;'
         self.cursor.execute(sql, (*new_data_array, row_id))
+        self.connect.commit()
 
     def insert_many_rows(self, table, table_data):
         table_columns = self.get_columns_names(table)[1:]
@@ -174,17 +178,26 @@ class Hotel:
             INSERT INTO {table} {table_columns}
             VALUES ({(len(table_columns) * "?, ")[:-2]})
             ''', table_data)
+        self.connect.commit()
 
     def insert_data_to_table(self, table, data_array):
         table_columns = self.get_columns_names(table)[1:]
         self.connect.execute(
             f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
+        self.connect.commit()
 
-    def remove_row(self, table, ids):  # [["20"], ["19"]]
+    def remove_row(self, table, id):
         table_columns = self.get_columns_names(table)
         id_name = table_columns[0]  # name of the row_id column
-        self.connect.executemany(
-            f'DELETE FROM {table} WHERE {id_name} = ?', ids)
+        self.connect.execute(
+            f'DELETE FROM {table} WHERE {id_name} = ?', id)
+
+        # Re-enumerate ids
+        sql = (f'''UPDATE {table} SET {id_name} = {id_name} - 1 
+               WHERE {id_name} > ?''')
+        self.cursor.execute(sql, id)
+
+        self.connect.commit()
 
     # ------------------------------------------------------------------------------------------------------------------
     # Saving to files --------------------------------------------------------------------------------------------------
