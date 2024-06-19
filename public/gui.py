@@ -38,9 +38,11 @@ class GUI:
         search_frame = tk.Frame(self.root)
         search_frame.pack(side=tk.TOP)
 
-        tk.Label(search_frame, text="SQL conditions").pack(side=tk.LEFT)
-        self.search_entry = tk.Entry(search_frame)
+        label = tk.Label(search_frame, text="SQL conditions")
+        label.pack(side=tk.LEFT)
+        self.search_entry = tk.Entry(search_frame, )
         self.search_entry.pack(side=tk.LEFT)
+        self.add_placeholder(self.search_entry, "gues_id > 1 AND guest_id < 50", label)
 
         tk.Button(search_frame, text="Execute", command=lambda: self.handle_search()).pack(side=tk.LEFT)
         tk.Button(search_frame, text="Clear", command=lambda: self.clear_conditions()).pack(side=tk.LEFT)
@@ -52,6 +54,26 @@ class GUI:
 
     def clear_conditions(self):
         self.search_entry.delete(0, tk.END)
+
+    def add_placeholder(self, entry, placeholder, label, color='grey'):
+        def on_focus_in(event):
+            if entry.get() == placeholder:
+                entry.delete(0, tk.END)
+                entry.config(fg='black')
+
+        def on_focus_out(event):
+            if not entry.get():
+                entry.insert(0, placeholder)
+                entry.config(fg=color)
+
+        entry.insert(0, placeholder)
+        entry.config(fg=color)
+        entry.bind("<FocusIn>", on_focus_in)
+        entry.bind("<FocusOut>", on_focus_out)
+        label.bind("<Button-1>", self.focus_out)
+
+    def focus_out(self, event):
+        event.widget.master.focus_set()
 
     def create_change_buttons(self):
         change_btns_frame = tk.Frame(self.root)
@@ -131,6 +153,7 @@ class GUI:
         try:
             self.hotel.cursor.execute(sql_query)
         except sqlite3.Error as error:
+            self.show_errors([error], self.table)
             print(f"Error while searching: '{error}'")
 
         rows = self.hotel.cursor.fetchall()
