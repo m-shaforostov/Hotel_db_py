@@ -8,9 +8,9 @@ class Hotel:
         try:
             self.connect = sqlite3.connect('hotel.db')  # Connect to/create
             self.cursor = self.connect.cursor()
+            self.create_tables()
             self.g = gui.GUI(self)
 
-            self.create_tables()
             # self.update_table_row("Guests", 20, ["Liamm", "Jackson", "liam.jackson@example.com", "+421-95-162-0414"])
             # self.update_table_row("Guests", 19, ["Evelyn", "Martinez", "evelyn.martinez@example.com", None])
             # self.update_table_row("Guests", 18, [None,"Hernandez","abigail.hernandez@example.com","+421-95-867-7175"])
@@ -139,11 +139,6 @@ class Hotel:
 
     # ------------------------------------------------------------------------------------------------------------------
     # Managing DB ------------------------------------------------------------------------------------------------------
-    def console_interface(self):
-        reading_from_files = input("Hello! Before we start, do you want to read data from files? y/[n]\n")
-        if reading_from_files.lower() == "y" or reading_from_files == "yes":
-            self.load_database_from_files()
-
     def get_columns_names(self, table):
         columns_info = self.cursor.execute(f'PRAGMA table_info({table})').fetchall()
         columns_names = []
@@ -166,34 +161,46 @@ class Hotel:
             os.remove(db)
 
     def update_table_row(self, table, row_id, new_data_array):
-        table_columns = self.get_columns_names(table)
-        id_name = table_columns[0]  # name of the row_id column
-        columns = table_columns[1:]  # names of columns without id column
-        set_query = ", ".join(f'{col} = ?' for col in columns)  # first_name = ?, last_name = ?, ...
-        sql = f'UPDATE {table} SET {set_query} WHERE {id_name} = ?;'
-        self.cursor.execute(sql, (*new_data_array, row_id))
-        self.connect.commit()
+        try:
+            table_columns = self.get_columns_names(table)
+            id_name = table_columns[0]  # name of the row_id column
+            columns = table_columns[1:]  # names of columns without id column
+            set_query = ", ".join(f'{col} = ?' for col in columns)  # first_name = ?, last_name = ?, ...
+            sql = f'UPDATE {table} SET {set_query} WHERE {id_name} = ?;'
+            self.cursor.execute(sql, (*new_data_array, row_id))
+            self.connect.commit()
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
 
     def insert_many_rows(self, table, table_data):
-        table_columns = self.get_columns_names(table)[1:]
-        self.cursor.executemany(f'''
-            INSERT INTO {table} {table_columns}
-            VALUES ({(len(table_columns) * "?, ")[:-2]})
-            ''', table_data)
-        self.connect.commit()
+        try:
+            table_columns = self.get_columns_names(table)[1:]
+            self.cursor.executemany(f'''
+                INSERT INTO {table} {table_columns}
+                VALUES ({(len(table_columns) * "?, ")[:-2]})
+                ''', table_data)
+            self.connect.commit()
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
 
     def insert_data_to_table(self, table, data_array):
-        table_columns = self.get_columns_names(table)[1:]
-        self.connect.execute(
-            f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
-        self.connect.commit()
+        try:
+            table_columns = self.get_columns_names(table)[1:]
+            self.connect.execute(
+                f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
+            self.connect.commit()
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
 
     def remove_row(self, table, id):
-        table_columns = self.get_columns_names(table)
-        id_name = table_columns[0]  # name of the row_id column
-        self.connect.execute(
-            f'DELETE FROM {table} WHERE {id_name} = ?', id)
-        self.connect.commit()
+        try:
+            table_columns = self.get_columns_names(table)
+            id_name = table_columns[0]  # name of the row_id column
+            self.connect.execute(
+                f'DELETE FROM {table} WHERE {id_name} = ?', id)
+            self.connect.commit()
+        except sqlite3.Error as error:
+            print(f"Error while getting table info: '{error}'")
 
     # ------------------------------------------------------------------------------------------------------------------
     # Saving to files --------------------------------------------------------------------------------------------------
