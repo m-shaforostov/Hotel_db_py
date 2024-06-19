@@ -17,6 +17,7 @@ class GUI:
         self.first_selected_data = None
         self.edit_window = None
         self.add_window = None
+        self.errors_window = None
         self.entry_widgets = []
         self.sort_order = dict()
 
@@ -37,15 +38,20 @@ class GUI:
         search_frame = tk.Frame(self.root)
         search_frame.pack(side=tk.TOP)
 
-        tk.Label(search_frame, text="Search").pack(side=tk.LEFT)
+        tk.Label(search_frame, text="SQL conditions").pack(side=tk.LEFT)
         self.search_entry = tk.Entry(search_frame)
         self.search_entry.pack(side=tk.LEFT)
 
+        tk.Button(search_frame, text="Execute", command=lambda: self.handle_search()).pack(side=tk.LEFT)
+        tk.Button(search_frame, text="Clear", command=lambda: self.clear_conditions()).pack(side=tk.LEFT)
         self.search_entry.bind('<Return>', self.handle_search)
 
-    def handle_search(self, _):
+    def handle_search(self, _=None):
         conditions = self.search_entry.get()
         self.load_table(self.loaded_table, conditions)
+
+    def clear_conditions(self):
+        self.search_entry.delete(0, tk.END)
 
     def create_change_buttons(self):
         change_btns_frame = tk.Frame(self.root)
@@ -195,21 +201,18 @@ class GUI:
             row_id = self.first_selected_data[0]
             new_data_array = [entry.get() or None for entry in self.entry_widgets]
             if table == "Guests":
-                name_check = self.validate_name(new_data_array[0])
-                surname_check = self.validate_name(new_data_array[1], "Surname")
-                email_check = self.validate_email(new_data_array[2])
-                phone_check = self.validate_phone(new_data_array[3])
-                print()
-                acceptation = name_check and surname_check and email_check and phone_check
-            else:
-                acceptation = True
-            if not acceptation:
-                return
+                errs = [self.validate_name(new_data_array[0]), self.validate_name(new_data_array[1], "Surname"),
+                        self.validate_email(new_data_array[2]), self.validate_phone(new_data_array[3])]
+                errs = list(filter(str, errs))
+                if errs:
+                    self.show_errors(errs, self.edit_window)
+                    return
             self.hotel.update_table_row(table, row_id, new_data_array)
             self.load_table(table)
             self.edit_window.destroy()
             print(f"Row {row_id} was updated successfully")
         except sqlite3.Error as error:
+            self.show_errors([error], self.add_window)
             print(f"Error while updating a row: '{error}'")
 
     def add_row(self):
@@ -237,21 +240,18 @@ class GUI:
             table = self.loaded_table
             data_array = [entry.get() or None for entry in self.entry_widgets]
             if table == "Guests":
-                name_check = self.validate_name(data_array[0])
-                surname_check = self.validate_name(data_array[1], "Surname")
-                email_check = self.validate_email(data_array[2])
-                phone_check = self.validate_phone(data_array[3])
-                print()
-                acceptation = name_check and surname_check and email_check and phone_check
-            else:
-                acceptation = True
-            if not acceptation:
-                return
+                errs = [self.validate_name(data_array[0]), self.validate_name(data_array[1], "Surname"),
+                        self.validate_email(data_array[2]), self.validate_phone(data_array[3])]
+                errs = list(filter(str, errs))
+                if errs:
+                    self.show_errors(errs, self.add_window)
+                    return
             self.hotel.insert_data_to_table(table, data_array)
             self.load_table(table)
             self.add_window.destroy()
             print(f"Row was added successfully")
         except sqlite3.Error as error:
+            self.show_errors([error], self.add_window)
             print(f"Error while adding a row: '{error}'")
 
     @staticmethod
@@ -279,30 +279,44 @@ class GUI:
     @staticmethod
     def validate_name(name, text="Name"):
         if name is None or len(name) < 2:
-            print(text + " should contain at least 2 characters")
-            return False
+            err = text + " should contain at least 2 characters"
+            print(err)
+            return err
         if any(char.isdigit() for char in name):
-            print(text + " should not contain digits")
-            return False
-        return True
+            err = text + " should not contain digits"
+            print(err)
+            return err
+        return ""
 
     @staticmethod
     def validate_email(email):
         regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         if email is None or not re.match(regex, email):
-            print("Invalid email address.")
-            return False
-        return True
+            err = "Invalid email address"
+            print(err)
+            return err
+        return ""
 
     @staticmethod
     def validate_phone(phone):
-        if phone == "":
-            return True
+        if phone is None:
+            return ""
         regex = r'^\+\d{3}-\d{2}-\d{3}-\d{4}$'
         if phone is None or not re.match(regex, phone):
-            print("Phone number must be in the format +000-00-000-0000")
-            return False
-        return True
+            err = "Phone number must be in the format +000-00-000-0000"
+            print(err)
+            return err
+        return ""
+
+    def show_errors(self, errors, window):
+        self.errors_window = tk.Toplevel(self.root)
+        self.errors_window.title("Input Error")
+        self.errors_window.transient(window)  # Set to be on top of the main window
+        self.errors_window.grab_set()  # Make the window modal
+        self.errors_window.focus()  # Set focus on the add window
+        for err in errors:
+            print(err)
+            tk.Label(self.errors_window, text=err, fg='red').pack(side=tk.TOP)
 
     def sort_by_column(self, col):
         if col not in self.sort_order or self.sort_order[col] is None:
