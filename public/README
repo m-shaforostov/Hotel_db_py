@@ -1,0 +1,17 @@
+1) Execute the scripts ./storage/generate_table.py and ./storage/to_binary.py sequentially::
+    ./storage/generate_table.py generates 500 rows for each table and writes them to text files,
+    ./storage/to_binary.py converts text files to binary format.
+
+2) Run hotel.py to launch the program interface.
+Upon launching the interface, you will initially see four buttons, each corresponding to a specific table: Guests, Rooms, Bookings, and Payments.
+
+Once you click on any of these buttons, the interface will display:
+- a row of buttons designed for managing photos, applicable only to the Guests table (rows must be selected before using these buttons).
+- a row of buttons for managing other data in every table:
+    1) "Clear table" button: Clears the table data without deleting the table itself.
+    2) "Remove row" button / "Delete" key: Deletes one or more selected rows.
+    3) "Add row" button: Opens a new window with input fields to add data for a new row.
+    4) "Update row" button: Opens a new window with pre-filled inputs to edit data of a pre-selected row.
+    5) "Load DB" button: Loads data from binary files into the SQLite3 database and refreshes the table.
+- a row with an SQL condition input to add a SQL "WHERE" condition for filtering the presented data.
+- a table displaying the database data.
