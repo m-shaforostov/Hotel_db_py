@@ -10,6 +10,7 @@ class GUI:
         # self.root.geometry('1000x400')
         self.root.title("Hotel Database")
 
+        self.search_entry = None
         self.table = None
         self.loaded_table = None
         self.selected_rows = tuple()
@@ -31,6 +32,20 @@ class GUI:
         tk.Button(open_btns_frame, text="Open Rooms", command=lambda: self.load_table("Rooms")).pack(side=tk.LEFT)
         tk.Button(open_btns_frame, text="Open Bookings", command=lambda: self.load_table("Bookings")).pack(side=tk.LEFT)
         tk.Button(open_btns_frame, text="Open Payments", command=lambda: self.load_table("Payments")).pack(side=tk.LEFT)
+
+    def create_search(self):
+        search_frame = tk.Frame(self.root)
+        search_frame.pack(side=tk.TOP)
+
+        tk.Label(search_frame, text="Search").pack(side=tk.LEFT)
+        self.search_entry = tk.Entry(search_frame)
+        self.search_entry.pack(side=tk.LEFT)
+
+        self.search_entry.bind('<Return>', self.handle_search)
+
+    def handle_search(self, _):
+        conditions = self.search_entry.get()
+        self.load_table(self.loaded_table, conditions)
 
     def create_change_buttons(self):
         change_btns_frame = tk.Frame(self.root)
@@ -78,9 +93,10 @@ class GUI:
         for item in self.table.get_children():
             self.table.delete(item)
 
-    def load_table(self, table):
+    def load_table(self, table, conditions=""):
         if not self.loaded_table:
             self.create_change_buttons()
+            self.create_search()
             self.create_table()
         self.loaded_table = table
 
@@ -89,19 +105,24 @@ class GUI:
         self.table.column("#0", width=0, stretch=tk.NO)  # Hide the first column
         self.draw_columns(table)
 
-        sorting_cols = list()
+        sorted_cols = list()
         for col, ord in self.sort_order.items():
             if ord is not None:
-                sorting_cols.append((col, ord))
+                sorted_cols.append((col, ord))
 
-        if sorting_cols:
-            query = ""
-            for el in sorting_cols:
-                query += f"{el[0]} {el[1]}, "
-            print(f"SELECT * FROM {self.loaded_table} ORDER BY {query[:-2]}")
-            self.hotel.cursor.execute(f"SELECT * FROM {self.loaded_table} ORDER BY {query[:-2]}")
-        else:
-            self.hotel.cursor.execute(f"SELECT * FROM {self.loaded_table}")
+        query = f"SELECT * FROM {self.loaded_table}"
+        sql_ordering = ""
+
+        if conditions:
+            query += " WHERE " + conditions
+
+        if sorted_cols:
+            sql_ordering = " ORDER BY " + ", ".join([f"{col} {ord}" for col, ord in sorted_cols])
+
+        sql_query = query + sql_ordering
+        print(sql_query)
+        self.hotel.cursor.execute(sql_query)
+
         rows = self.hotel.cursor.fetchall()
         for row in rows:
             self.table.insert("", tk.END, values=row)
@@ -176,10 +197,10 @@ class GUI:
                 surname_check = self.validate_name(new_data_array[1], "Surname")
                 email_check = self.validate_email(new_data_array[2])
                 phone_check = self.validate_phone(new_data_array[3])
-                acception = name_check and surname_check and email_check and phone_check
+                acceptation = name_check and surname_check and email_check and phone_check
             else:
-                acception = True
-            if not acception:
+                acceptation = True
+            if not acceptation:
                 return
             self.hotel.update_table_row(table, row_id, new_data_array)
             self.load_table(table)
@@ -217,10 +238,10 @@ class GUI:
                 surname_check = self.validate_name(data_array[1], "Surname")
                 email_check = self.validate_email(data_array[2])
                 phone_check = self.validate_phone(data_array[3])
-                acception = name_check and surname_check and email_check and phone_check
+                acceptation = name_check and surname_check and email_check and phone_check
             else:
-                acception = True
-            if not acception:
+                acceptation = True
+            if not acceptation:
                 return
             self.hotel.insert_data_to_table(table, data_array)
             self.load_table(table)

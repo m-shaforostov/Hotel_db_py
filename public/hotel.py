@@ -183,7 +183,6 @@ class Hotel:
         except sqlite3.Error as error:
             raise error
 
-
     def remove_row(self, table, id):
         try:
             table_columns = self.get_columns_names(table)
