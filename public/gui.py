@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import re
+import tkinter.filedialog as fd
+
 
 class GUI:
     def __init__(self, hotel):
@@ -20,6 +22,8 @@ class GUI:
         self.errors_window = None
         self.entry_widgets = []
         self.sort_order = dict()
+        self.image_buttons = dict()
+        self.images = {}
 
         self.create_open_buttons()
 
@@ -40,7 +44,7 @@ class GUI:
 
         label = tk.Label(search_frame, text="SQL conditions")
         label.pack(side=tk.LEFT)
-        self.search_entry = tk.Entry(search_frame, )
+        self.search_entry = tk.Entry(search_frame)
         self.search_entry.pack(side=tk.LEFT)
         self.add_placeholder(self.search_entry, "gues_id > 1 AND guest_id < 50", label)
 
@@ -74,6 +78,23 @@ class GUI:
 
     def focus_out(self, event):
         event.widget.master.focus_set()
+
+    def create_image_buttons(self):
+        image_btns_frame = tk.Frame(self.root)
+        image_btns_frame.pack(side=tk.TOP)
+
+        self.image_buttons["upload"] = tk.Button(image_btns_frame, text="Upload Image", command=self.upload_image)
+        self.image_buttons["display"] = tk.Button(image_btns_frame, text="Display Image", command=self.display_image)
+        self.image_buttons["upload"].pack(side=tk.LEFT)
+        self.image_buttons["display"].pack(side=tk.LEFT)
+
+    def disable_buttons(self):
+        for button in self.image_buttons.values():
+            button.config(state=tk.DISABLED)
+
+    def enable_buttons(self):
+        for button in self.image_buttons.values():
+            button.config(state=tk.NORMAL)
 
     def create_change_buttons(self):
         change_btns_frame = tk.Frame(self.root)
@@ -123,6 +144,7 @@ class GUI:
 
     def load_table(self, table, conditions=""):
         if not self.loaded_table:
+            self.create_image_buttons()
             self.create_change_buttons()
             self.create_search()
             self.create_table()
@@ -157,8 +179,19 @@ class GUI:
             print(f"Error while searching: '{error}'")
 
         rows = self.hotel.cursor.fetchall()
-        for row in rows:
-            self.table.insert("", tk.END, values=row)
+        if table == "Guests":
+            self.enable_buttons()
+            for row in rows:
+                row_data = list(row)
+                if row_data[-1]:  # photo column
+                    row_data[-1] = "picture"
+                else:
+                    row_data[-1] = "None"
+                self.table.insert("", tk.END, values=row_data)
+        else:
+            self.disable_buttons()
+            for row in rows:
+                self.table.insert("", tk.END, values=row)
 
     # ------------------------------------------------------------------------------------------------------------------
     def clear_tabel(self):
@@ -182,6 +215,7 @@ class GUI:
             self.load_table(self.loaded_table)
             print()
         else:
+            self.show_errors(["No row selected"], self.root)
             print("No row selected")
 
     def on_row_selected(self, _):
@@ -192,8 +226,10 @@ class GUI:
                 print(f"Selected row data from {self.loaded_table}: {self.table.item(row)['values']}")
             print()
 
+    # ------------------------------------------------------------------------------------------------------------------
     def make_row_editable(self):
         if len(self.selected_rows) > 1:
+            self.show_errors(["Only one row should be selected"], self.root)
             print("Only one row should be selected")
         elif len(self.selected_rows) == 1:
             self.edit_window = tk.Toplevel(self.root)
@@ -203,8 +239,8 @@ class GUI:
             self.edit_window.focus()  # Set focus on the edit window
 
             self.entry_widgets = []
-            for index, value in enumerate(self.first_selected_data[1:]):  # without id column
-                tk.Label(self.edit_window, text=self.table["columns"][index+1]).grid(row=index, column=0)
+            for index, value in enumerate(self.first_selected_data[1:-1]):  # without id column and photo
+                tk.Label(self.edit_window, text=self.table["columns"][index + 1]).grid(row=index, column=0)
                 entry = tk.Entry(self.edit_window)
                 entry.insert(0, value)
                 entry.grid(row=index, column=1)
@@ -216,6 +252,7 @@ class GUI:
             save_button.grid(row=len(self.entry_widgets), column=1, sticky='e')
             self.edit_window.bind('<Return>', self.update_row_in_db)
         else:
+            self.show_errors(["No row selected"], self.root)
             print("No row selected")
 
     def update_row_in_db(self, _=None):
@@ -238,6 +275,7 @@ class GUI:
             self.show_errors([error], self.add_window)
             print(f"Error while updating a row: '{error}'")
 
+    # ------------------------------------------------------------------------------------------------------------------
     def add_row(self):
         self.add_window = tk.Toplevel(self.root)
         self.add_window.title("Add mode")
@@ -246,7 +284,7 @@ class GUI:
         self.add_window.focus()  # Set focus on the add window
 
         self.entry_widgets = []
-        for index, col in enumerate(self.table["columns"][1:]):  # without id column
+        for index, col in enumerate(self.table["columns"][1:-1]):  # without id column
             tk.Label(self.add_window, text=col).grid(row=index, column=0)
             entry = tk.Entry(self.add_window)
             entry.grid(row=index, column=1)
@@ -303,11 +341,9 @@ class GUI:
     def validate_name(name, text="Name"):
         if name is None or len(name) < 2:
             err = text + " should contain at least 2 characters"
-            print(err)
             return err
         if any(char.isdigit() for char in name):
             err = text + " should not contain digits"
-            print(err)
             return err
         return ""
 
@@ -316,7 +352,6 @@ class GUI:
         regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         if email is None or not re.match(regex, email):
             err = "Invalid email address"
-            print(err)
             return err
         return ""
 
@@ -327,7 +362,6 @@ class GUI:
         regex = r'^\+\d{3}-\d{2}-\d{3}-\d{4}$'
         if phone is None or not re.match(regex, phone):
             err = "Phone number must be in the format +000-00-000-0000"
-            print(err)
             return err
         return ""
 
@@ -341,6 +375,7 @@ class GUI:
             print(err)
             tk.Label(self.errors_window, text=err, fg='red').pack(side=tk.TOP)
 
+    # ------------------------------------------------------------------------------------------------------------------
     def sort_by_column(self, col):
         if col not in self.sort_order or self.sort_order[col] is None:
             self.sort_order[col] = "DESC"
@@ -350,3 +385,53 @@ class GUI:
             self.sort_order[col] = None
 
         self.load_table(self.loaded_table)
+
+    def upload_image(self):
+        try:
+            if len(self.selected_rows) > 1:
+                self.show_errors(["Only one row should be selected"], self.root)
+                print("Only one row should be selected")
+            elif len(self.selected_rows) == 1:
+                filetypes = (("PNG files", "*.png"), ("All files", "*.*"))
+                filename = fd.askopenfilename(title="Open an image",
+                                              initialdir="/home/PycharmProjects/Hotel_DB/public/storage/",
+                                              filetypes=filetypes)
+                row_id = self.table.selection()[0]
+                guest_id = self.get_row(row_id)[0]
+                self.hotel.insert_image(guest_id, filename)
+                self.load_table(self.loaded_table)
+            else:
+                self.show_errors(["No row selected"], self.root)
+                print("No row selected")
+        except Exception as err:
+            self.show_errors([err], self.root)
+            print(err)
+
+    def display_image(self):
+        try:
+            if len(self.selected_rows) > 1:
+                self.show_errors(["Only one row should be selected"], self.root)
+                print("Only one row should be selected")
+            elif len(self.selected_rows) == 1:
+                row_id = self.table.selection()[0]
+                guest_id = self.get_row(row_id)[0]
+                display_file = "./storage/img/display.png"
+                is_picture = self.hotel.read_image(guest_id, display_file)
+                if is_picture:
+                    image_window = tk.Toplevel(self.root)
+                    image_window.transient(self.root)  # Set to be on top of the main window
+                    image_window.grab_set()  # Make the window modal
+                    image_window.focus()  # Set focus on the add window
+                    image = tk.PhotoImage(file=display_file)
+                    label = tk.Label(image_window, image=image)
+                    label.image = image
+                    label.pack()
+                else:
+                    self.show_errors(["There is no picture stored"], self.root)
+                    print("There is no picture stored")
+            else:
+                self.show_errors(["No row selected"], self.root)
+                print("No row selected")
+        except Exception as err:
+            self.show_errors([err], self.root)
+            print(err)

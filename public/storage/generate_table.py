@@ -119,15 +119,16 @@ def write_into_file(file_name, data):
         file.write(data)
 
 
-guests_data_text = generate_guests_data(500)
+a = 50
+guests_data_text = generate_guests_data(a)
 print(guests_data_text)
 write_into_file("../backup/guests_data_text", guests_data_text)
 #
-rooms_data_text = generate_rooms_data(500)
+rooms_data_text = generate_rooms_data(a)
 print(rooms_data_text)
 write_into_file("../backup/rooms_data_text", rooms_data_text)
 
-bookings_data_text = generate_bookings_data(300, 300, 500)
+bookings_data_text = generate_bookings_data(a-10, a-10, a)
 print(bookings_data_text)
 write_into_file("../backup/bookings_data_text", bookings_data_text)
 

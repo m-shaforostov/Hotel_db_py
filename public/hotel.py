@@ -2,7 +2,6 @@ import sqlite3
 import os
 import gui
 
-
 class Hotel:
     def __init__(self):
         try:
@@ -11,6 +10,10 @@ class Hotel:
             self.create_tables()
             self.load_database_from_files()
             self.g = gui.GUI(self)
+
+            # self.connect.execute(f'INSERT INTO Guests (first_name, last_name, email) VALUES ("Maksym", "Shaforostov", "maxim.sahfrosotov@gmail.com")')
+            # self.connect.commit()
+
 
             # self.clear_table("Guests")
             # self.remove_row("Guests", 1)
@@ -35,7 +38,8 @@ class Hotel:
                 first_name TEXT NOT NULL,
                 last_name TEXT NOT NULL,
                 email TEXT NOT NULL,
-                phone_number TEXT
+                phone_number TEXT,
+                photo BLOB
             )
         ''')
 
@@ -112,7 +116,7 @@ class Hotel:
             payments_data = self.parse_to_array("storage/payments_data_text.dat")
 
             self.clear_table("Guests")
-            self.insert_many_rows("Guests", guests_data)
+            self.insert_many_rows("Guests", guests_data, 1)
 
             self.clear_table("Rooms")
             self.insert_many_rows("Rooms", rooms_data)
@@ -130,6 +134,29 @@ class Hotel:
             print(f"SQLite error: {er}")
         except Exception as er:
             print(f"An unexpected error occurred: {er}")
+
+    @staticmethod
+    def convert_to_binary_data(file_name):
+        with open(file_name, 'rb') as file:
+            blob_data = file.read()
+        return blob_data
+
+    def insert_image(self, guest_id, filename):
+        binary_data = self.convert_to_binary_data(filename)
+        self.cursor.execute("UPDATE Guests SET photo = ? WHERE guest_id = ?", (binary_data, guest_id))
+        self.connect.commit()
+
+    @staticmethod
+    def write_to_file(data, filename):
+        with open(filename, 'wb') as file:
+            file.write(data)
+
+    def read_image(self, guest_id, output_filename):
+        self.cursor.execute("SELECT photo FROM Guests WHERE guest_id = ?", (guest_id,))
+        photo = self.cursor.fetchone()[0]
+        if photo:
+            self.write_to_file(photo, output_filename)
+            return True
 
     # ------------------------------------------------------------------------------------------------------------------
     # Managing DB ------------------------------------------------------------------------------------------------------
@@ -158,7 +185,7 @@ class Hotel:
         try:
             table_columns = self.get_columns_names(table)
             id_name = table_columns[0]  # name of the row_id column
-            columns = table_columns[1:]  # names of columns without id column
+            columns = table_columns[1:-1]  # names of columns without id column and photo
             set_query = ", ".join(f'{col} = ?' for col in columns)  # first_name = ?, last_name = ?, ...
             sql = f'UPDATE {table} SET {set_query} WHERE {id_name} = ?;'
             self.cursor.execute(sql, (*new_data_array, row_id))
@@ -166,9 +193,12 @@ class Hotel:
         except sqlite3.Error as error:
             raise error
 
-    def insert_many_rows(self, table, table_data):
+    def insert_many_rows(self, table, table_data, rm=0):
         try:
-            table_columns = self.get_columns_names(table)[1:]
+            if rm:
+                table_columns = self.get_columns_names(table)[1:-1]
+            else:
+                table_columns = self.get_columns_names(table)[1:]
             print(table, table_columns, table_data)
             self.cursor.executemany(f'''
                 INSERT INTO {table} {table_columns}
@@ -178,9 +208,12 @@ class Hotel:
         except sqlite3.Error as error:
             raise error
 
-    def insert_data_to_table(self, table, data_array):
+    def insert_data_to_table(self, table, data_array, rm=0):
         try:
-            table_columns = self.get_columns_names(table)[1:]
+            if rm:
+                table_columns = self.get_columns_names(table)[1:-1]
+            else:
+                table_columns = self.get_columns_names(table)[1:]
             self.connect.execute(
                 f'INSERT INTO {table} {table_columns} VALUES ({(len(table_columns) * "?, ")[:-2]})', data_array)
             self.connect.commit()
