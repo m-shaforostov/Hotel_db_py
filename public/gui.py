@@ -148,7 +148,9 @@ class GUI:
             self.create_change_buttons()
             self.create_search()
             self.create_table()
-        self.loaded_table = table
+        if table != self.loaded_table:
+            self.sort_order = dict()
+            self.loaded_table = table
 
         self.wipe_table_data()
 
@@ -239,7 +241,11 @@ class GUI:
             self.edit_window.focus()  # Set focus on the edit window
 
             self.entry_widgets = []
-            for index, value in enumerate(self.first_selected_data[1:-1]):  # without id column and photo
+            if self.loaded_table == "Guests":
+                columns = self.first_selected_data[1:-1]  # without id column and photo
+            else:
+                columns = self.first_selected_data[1:]
+            for index, value in enumerate(columns):
                 tk.Label(self.edit_window, text=self.table["columns"][index + 1]).grid(row=index, column=0)
                 entry = tk.Entry(self.edit_window)
                 entry.insert(0, value)
@@ -284,7 +290,11 @@ class GUI:
         self.add_window.focus()  # Set focus on the add window
 
         self.entry_widgets = []
-        for index, col in enumerate(self.table["columns"][1:-1]):  # without id column
+        if self.loaded_table == "Guests":
+            columns = self.table["columns"][1:-1]
+        else:
+            columns = self.table["columns"][1:]
+        for index, col in enumerate(columns):  # without id column
             tk.Label(self.add_window, text=col).grid(row=index, column=0)
             entry = tk.Entry(self.add_window)
             entry.grid(row=index, column=1)
@@ -394,10 +404,10 @@ class GUI:
             elif len(self.selected_rows) == 1:
                 filetypes = (("PNG files", "*.png"), ("All files", "*.*"))
                 filename = fd.askopenfilename(title="Open an image",
-                                              initialdir="/home/PycharmProjects/Hotel_DB/public/storage/",
+                                              initialdir="/home/PycharmProjects/Hotel_DB/public/",
                                               filetypes=filetypes)
                 row_id = self.table.selection()[0]
-                guest_id = self.get_row(row_id)[0]
+                guest_id = self.get_row(row_id)
                 self.hotel.insert_image(guest_id, filename)
                 self.load_table(self.loaded_table)
             else:
@@ -414,7 +424,7 @@ class GUI:
                 print("Only one row should be selected")
             elif len(self.selected_rows) == 1:
                 row_id = self.table.selection()[0]
-                guest_id = self.get_row(row_id)[0]
+                guest_id = self.get_row(row_id)
                 display_file = "./storage/img/display.png"
                 is_picture = self.hotel.read_image(guest_id, display_file)
                 if is_picture:
